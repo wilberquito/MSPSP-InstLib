@@ -1,10 +1,11 @@
 % Author: Kenneth Young 2017
 % Multi-Skill Project Scheduling Problem
 % Constraint Programming model
-  
+
 include "cumulative.mzn";
 include "disjunctive.mzn";
 include "redefinitions.mzn";
+include "chuffed.mzn";
 
 0..1: full_output;
 
@@ -35,7 +36,7 @@ array[PREC] of ACT: pred; % predecessor activity
 array[PREC] of ACT: succ; % successor activity
 array[UNREL] of ACT: unpred; % unrelated predecessor activity
 array[UNREL] of ACT: unsucc; % unrelated successor activity
-array[SKILL] of 0..nResources: scap = 
+array[SKILL] of 0..nResources: scap =
     [sum(r in RESOURCE)(bool2int(mastery[r,s])) | s in SKILL]; % capacity of each skill
 
 
@@ -44,7 +45,7 @@ array[SKILL] of 0..nResources: scap =
 array[ACT] of var TIME: start; % start time
 array[ACT,RESOURCE] of var bool: assign; % assignment of resources to activities
 array[ACT,RESOURCE,SKILL] of var bool: contrib; % skill contribution assignment
-array[UNREL] of var bool: overlap; % overlapping of unrelated activities 
+array[UNREL] of var bool: overlap; % overlapping of unrelated activities
 
 var TIME: makespan = start[nActs];  % makespan
 
@@ -58,7 +59,7 @@ constraint forall(p in PREC)(
 
 % Unary resource constraint
 constraint
-  forall ( 
+  forall (
     u in UNREL
   )(
   let {int: i = unpred[u],
@@ -113,7 +114,7 @@ constraint forall(s in SKILL)(
 % Resources required by each activity is capped by total # of resources
 constraint cumulative(start, dur, [ sum(s in SKILL)(sreq[a,s]) | a in ACT ],
   nResources ) :: ttef_filt(true);% :: name("resources");
-  
+
 
 % Force assign variables which cannot be satisfied to false
 constraint forall(a in ACT, r in RESOURCE diff USEFUL_RES[a])(
@@ -125,7 +126,7 @@ constraint forall(a in ACT) (
   % if resource isn't useful for activity then it can't contribute
   forall(r in RESOURCE diff USEFUL_RES[a], s in SKILL) (
       contrib[a,r,s] == 0) /\
-      
+
   % if activity does not require this skill then contribution is false
   forall(r in RESOURCE, s in SKILL where sreq[a,s]==0)(
       contrib[a,r,s] == 0)
@@ -147,8 +148,8 @@ ann: start_s = int_search(start, first_fail, indomain_min, complete);
 %ann: overlap_s = int_search(overlap, largest, indomain_min, complete);
 ann: assign_s = bool_search([ assign[a,r] | a in ACT, r in RESOURCE ],
                            input_order, indomain_max, complete);
-                         
-ann: contrib_s = bool_search([ contrib[a,r,s] 
+
+ann: contrib_s = bool_search([ contrib[a,r,s]
                            | a in ACT, r in RESOURCE, s in SKILL ],
                            input_order, indomain_max, complete);
 
@@ -157,13 +158,13 @@ ann: assign_Then_start = seq_search([ assign_s, start_s ]);
 ann: contrib_Then_start = seq_search([ contrib_s, start_s ]);
 ann: start_Then_assign = seq_search([ start_s, assign_s ]);
 ann: start_Then_contrib = seq_search([ start_s, contrib_s ]);
-%ann: overlap_Then_assign_Then_start = 
+%ann: overlap_Then_assign_Then_start =
 %              seq_search([ overlap_s, assign_s, start_s ]);
-%ann: overlap_Then_contrib_Then_start = 
-%              seq_search([ overlap_s, contrib_s, start_s ]);         
-                  
+%ann: overlap_Then_contrib_Then_start =
+%              seq_search([ overlap_s, contrib_s, start_s ]);
+
 % Priority Searches
-ann: priority_input_order = 
+ann: priority_input_order =
   priority_search(start,
                   [seq_search([
                       int_search([start[a]], input_order, indomain_min, complete),
@@ -171,8 +172,8 @@ ann: priority_input_order =
                                   input_order, indomain_max, complete)])
                    | a in ACT ],
                    input_order, complete);
-       
-ann: priority_smallest = 
+
+ann: priority_smallest =
   priority_search(start,
                   [seq_search([
                       int_search([start[a]], input_order, indomain_min, complete),
@@ -185,9 +186,9 @@ array[RESOURCE] of var TIME: res_load = [
     sum(a in ACT)( dur[a] * assign[a,r] )
 | r in RESOURCE ];
 
-ann: priority_smallest_load = 
+ann: priority_smallest_load =
     priority_search(start,
-        [   
+        [
             seq_search([
                 int_search([start[a]], input_order, indomain_min, complete),
                 priority_search(res_load,
@@ -202,22 +203,22 @@ ann: priority_smallest_load =
         | a in ACT ],
         smallest, complete);
 
-ann: priority_smallest_largest = 
+ann: priority_smallest_largest =
   priority_search(start,
                   [seq_search([
                       int_search([start[a]], input_order, indomain_min, complete),
                       bool_search([contrib[a,r,s] | r in RESOURCE, s in SKILL],
                                   input_order, indomain_max, complete)])
-                   | a in ACT ], 
+                   | a in ACT ],
                    smallest_largest, complete);
 
-ann: priority_first_fail = 
+ann: priority_first_fail =
   priority_search(start,
                   [seq_search([
                       int_search([start[a]], input_order, indomain_min, complete),
                       bool_search([contrib[a,r,s] | r in RESOURCE, s in SKILL],
                                   input_order, indomain_max, complete)])
-                   | a in ACT ], 
+                   | a in ACT ],
                    first_fail, complete);
 
 
@@ -232,13 +233,13 @@ minimize makespan;
 %~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~%
 % OUTPUT
 output
-if full_output == 0 then    
+if full_output == 0 then
   ["makespan = " ++ show(makespan) ++ "\n"]
 elseif full_output == 1 then
   ["makespan = " ++ show(makespan) ++ "\n"] ++
   ["start times = " ++ show(start) ++ "\n"] ++
   ["assignment = " ++ show(assign) ++ "\n"] ++
-  ["contribution = " ++ show(contrib) ++ "\n"] 
+  ["contribution = " ++ show(contrib) ++ "\n"]
 else
   [""]
 endif
