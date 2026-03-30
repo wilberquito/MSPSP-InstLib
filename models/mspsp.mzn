@@ -237,7 +237,7 @@ if full_output == 0 then
   ["makespan = " ++ show(makespan) ++ "\n"]
 elseif full_output == 1 then
   ["makespan = " ++ show(makespan) ++ "\n"] ++
-  ["start times = " ++ show(start) ++ "\n"] ++
+  ["start_times = " ++ show(start) ++ "\n"] ++
   ["assignment = " ++ show(assign) ++ "\n"] ++
   ["contribution = " ++ show(contrib) ++ "\n"]
 else
